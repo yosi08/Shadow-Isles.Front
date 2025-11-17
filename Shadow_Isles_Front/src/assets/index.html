@@ -198,16 +198,6 @@
             background-color: rgba(107, 181, 199, 1);
             transform: translateY(-2px);
         }
-
-        .center-image {
-            position: absolute;
-            top: 80%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            max-width: 300px;
-            max-height: 300px;
-            z-index: 10;
-        }
     </style>
 </head>
 <body>
@@ -287,39 +277,8 @@
                 desktopIcons.style.display = 'none';
             }
 
-            // Add click event for all backgrounds
-            backgroundViewScreen.onclick = function(e) {
-                // Check if click is not on button or icon
-                if (!e.target.closest('.back-button') && !e.target.closest('.desktop-icon')) {
-                    addCenterImage();
-                }
-            };
-
             // Show background view screen
             showScreen('background-view');
-        }
-
-        function addCenterImage() {
-            console.log('addCenterImage called');
-            // Remove existing center image if any
-            const existingImage = document.querySelector('.center-image');
-            if (existingImage) {
-                existingImage.remove();
-            }
-
-            // Create and add new image
-            const img = document.createElement('img');
-            img.src = 'src/assets/happy.png';
-            img.alt = 'Happy';
-            img.className = 'center-image';
-            img.onload = function() {
-                console.log('Image loaded successfully');
-            };
-            img.onerror = function() {
-                console.error('Failed to load image');
-            };
-            document.getElementById('background-view-screen').appendChild(img);
-            console.log('Image element added to DOM');
         }
     </script>
 </body>
