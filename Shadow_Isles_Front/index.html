@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shadow Isles Front</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Playfair Display', 'Georgia', serif;
+        }
+
+        .screen {
+            display: none;
+        }
+
+        .screen.active {
+            display: flex !important;
+        }
+
+        /* Welcome Screen */
+        .welcome-screen {
+            min-height: 100vh;
+            background-color: #000;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            padding: 20px;
+        }
+
+        .welcome-title {
+            color: #fff;
+            font-size: 96px;
+            font-family: 'Playfair Display', 'Georgia', serif;
+            font-weight: 400;
+            display: flex;
+            gap: 0;
+            letter-spacing: -0.02em;
+        }
+
+        .kundo-icon {
+            height: 160px;
+            width: auto;
+            margin: -30px -20px 0 -20px;
+            vertical-align: middle;
+        }
+
+        .start-button {
+            position: absolute;
+            bottom: 60px;
+            right: 80px;
+            background-color: #5ba3b4;
+            color: #000;
+            font-size: 36px;
+            font-family: 'Playfair Display', 'Georgia', serif;
+            font-weight: 400;
+            padding: 15px 45px;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .start-button:hover {
+            background-color: #6bb5c7;
+            transform: translateY(-2px);
+        }
+
+        /* Choose Background Screen */
+        .choose-background-screen {
+            min-height: 100vh;
+            background-color: #000;
+            flex-direction: column;
+            align-items: center;
+            padding: 60px 20px;
+        }
+
+        .title {
+            color: #fff;
+            font-size: 72px;
+            font-family: 'Playfair Display', 'Georgia', serif;
+            font-weight: 400;
+            margin: 0 0 80px 0;
+            letter-spacing: -0.02em;
+        }
+
+        .background-container {
+            display: flex;
+            gap: 100px;
+            justify-content: center;
+            align-items: center;
+            max-width: 1400px;
+        }
+
+        .background-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .background-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .image-wrapper {
+            width: 300px;
+            height: 420px;
+            border-radius: 20px;
+            overflow: hidden;
+            margin-bottom: 20px;
+            background-color: #d4d4d4;
+        }
+
+        .image-wrapper img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .background-name {
+            color: #fff;
+            font-size: 42px;
+            font-family: 'Playfair Display', 'Georgia', serif;
+            font-weight: 400;
+            margin: 0;
+            letter-spacing: -0.01em;
+        }
+
+        /* Background View Screen */
+        .background-view-screen {
+            min-height: 100vh;
+            width: 100%;
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            position: relative;
+            align-items: flex-start;
+            justify-content: flex-start;
+        }
+
+        .desktop-icons {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+        }
+
+        .desktop-icon {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+            width: 80px;
+            gap: 5px;
+        }
+
+        .desktop-icon img {
+            width: 50px;
+            height: 50px;
+            filter: drop-shadow(1px 1px 2px rgba(0, 0, 0, 0.5));
+        }
+
+        .desktop-icon span {
+            color: #fff;
+            font-size: 12px;
+            text-align: center;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.7);
+            font-family: Arial, sans-serif;
+        }
+
+        .back-button {
+            position: absolute;
+            bottom: 40px;
+            right: 40px;
+            background-color: rgba(91, 163, 180, 0.9);
+            color: #fff;
+            font-size: 24px;
+            font-family: 'Playfair Display', 'Georgia', serif;
+            font-weight: 400;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .back-button:hover {
+            background-color: rgba(107, 181, 199, 1);
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+<body>
+    <!-- Welcome Screen -->
+    <div id="welcome-screen" class="screen welcome-screen active">
+        <h1 class="welcome-title">
+            Welcome to <img src="src/assets/none_background_kundo.png" alt="K" class="kundo-icon" />undo
+        </h1>
+        <button class="start-button" onclick="showScreen('choose-background')">start</button>
+    </div>
+
+    <!-- Choose Background Screen -->
+    <div id="choose-background-screen" class="screen choose-background-screen">
+        <h1 class="title">Choose Background</h1>
+        <div class="background-container">
+            <div class="background-card" onclick="selectBackground('nature', 'public/nature.png')">
+                <div class="image-wrapper">
+                    <img src="public/nature.png" alt="nature">
+                </div>
+                <p class="background-name">nature</p>
+            </div>
+            <div class="background-card" onclick="selectBackground('classroom', 'src/assets/classroom.png')">
+                <div class="image-wrapper">
+                    <img src="src/assets/classroom.png" alt="classroom">
+                </div>
+                <p class="background-name">classroom</p>
+            </div>
+            <div class="background-card" onclick="selectBackground('theater', 'public/theater.png')">
+                <div class="image-wrapper">
+                    <img src="public/theater.png" alt="theater">
+                </div>
+                <p class="background-name">theater</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Background View Screen -->
+    <div id="background-view-screen" class="screen background-view-screen">
+        <div id="desktop-icons" class="desktop-icons" style="display: none;">
+            <div class="desktop-icon">
+                <img src="src/assets/streamline-pixel--computer-old-electronics.svg" alt="Computer">
+                <span>Computer</span>
+            </div>
+            <div class="desktop-icon">
+                <img src="src/assets/pixel--trash.svg" alt="Trash">
+                <span>Trash</span>
+            </div>
+        </div>
+        <button class="back-button" onclick="showScreen('choose-background')">Back</button>
+    </div>
+
+    <script>
+        let currentBackground = null;
+
+        function showScreen(screenName) {
+            // Hide all screens
+            document.querySelectorAll('.screen').forEach(screen => {
+                screen.classList.remove('active');
+            });
+
+            // Show selected screen
+            document.getElementById(screenName + '-screen').classList.add('active');
+        }
+
+        function selectBackground(backgroundId, backgroundImage) {
+            currentBackground = backgroundId;
+            const backgroundViewScreen = document.getElementById('background-view-screen');
+            const desktopIcons = document.getElementById('desktop-icons');
+
+            // Set background image
+            backgroundViewScreen.style.backgroundImage = `url(${backgroundImage})`;
+
+            // Show icons only for nature background
+            if (backgroundId === 'nature') {
+                desktopIcons.style.display = 'flex';
+            } else {
+                desktopIcons.style.display = 'none';
+            }
+
+            // Show background view screen
+            showScreen('background-view');
+        }
+    </script>
+</body>
+</html>
