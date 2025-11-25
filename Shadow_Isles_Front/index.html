@@ -208,6 +208,16 @@
             max-height: 300px;
             z-index: 10;
         }
+
+        .no-emotion-image {
+            position: absolute;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            max-width: 300px;
+            max-height: 300px;
+            z-index: 10;
+        }
     </style>
 </head>
 <body>
@@ -261,14 +271,12 @@
 
     <script>
         let currentBackground = null;
+        const API_BASE_URL = 'http://localhost:5000';  // Flask 서버 주소
 
         function showScreen(screenName) {
-            // Hide all screens
             document.querySelectorAll('.screen').forEach(screen => {
                 screen.classList.remove('active');
             });
-
-            // Show selected screen
             document.getElementById(screenName + '-screen').classList.add('active');
         }
 
@@ -277,49 +285,108 @@
             const backgroundViewScreen = document.getElementById('background-view-screen');
             const desktopIcons = document.getElementById('desktop-icons');
 
-            // Set background image
             backgroundViewScreen.style.backgroundImage = `url(${backgroundImage})`;
 
-            // Show icons only for nature background
             if (backgroundId === 'nature') {
                 desktopIcons.style.display = 'flex';
+                // nature 배경에서 센서 모니터링 시작
+                startSensorMonitoring();
             } else {
                 desktopIcons.style.display = 'none';
             }
 
-            // Add click event for all backgrounds
+            // 배경 선택 시 no_emotion 이미지 추가
+            addNoEmotionImage();
+
             backgroundViewScreen.onclick = function(e) {
-                // Check if click is not on button or icon
                 if (!e.target.closest('.back-button') && !e.target.closest('.desktop-icon')) {
                     addCenterImage();
                 }
             };
 
-            // Show background view screen
             showScreen('background-view');
         }
 
-        function addCenterImage() {
+        async function addCenterImage() {
             console.log('addCenterImage called');
-            // Remove existing center image if any
+
             const existingImage = document.querySelector('.center-image');
             if (existingImage) {
                 existingImage.remove();
             }
 
-            // Create and add new image
+            // 백엔드에서 최신 센서 데이터 가져오기
+            const sensorData = await getLatestSensorData();
+
+            let imagePath = 'src/assets/happy.png';
+
+            // 센서 데이터에 따라 이미지 선택
+            if (sensorData) {
+                if (sensorData.temperature > 28) {
+                    imagePath = 'src/assets/hot.png';
+                } else if (sensorData.brightness < 30) {
+                    imagePath = 'src/assets/dark.png';
+                }
+            }
+
             const img = document.createElement('img');
-            img.src = 'src/assets/happy.png';
-            img.alt = 'Happy';
+            img.src = imagePath;
+            img.alt = 'Character';
             img.className = 'center-image';
-            img.onload = function() {
-                console.log('Image loaded successfully');
-            };
-            img.onerror = function() {
-                console.error('Failed to load image');
-            };
             document.getElementById('background-view-screen').appendChild(img);
-            console.log('Image element added to DOM');
+        }
+
+        // API 함수들
+        async function getLatestSensorData() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/sensor_data/latest`);
+                if (!response.ok) throw new Error('Failed to fetch');
+                return await response.json();
+            } catch (error) {
+                console.error('센서 데이터 조회 에러:', error);
+                return null;
+            }
+        }
+
+        async function updateCharacterBasedOnSensor() {
+            const sensorData = await getLatestSensorData();
+            const existingImage = document.querySelector('.center-image');
+
+            if (sensorData && existingImage) {
+                let imagePath = 'src/assets/happy.png';
+
+                if (sensorData.temperature > 28) {
+                    imagePath = 'src/assets/hot.png';
+                } else if (sensorData.temperature < 20) {
+                    imagePath = 'src/assets/cold.png';
+                } else if (sensorData.brightness < 30) {
+                    imagePath = 'src/assets/dark.png';
+                } else if (sensorData.pose === 'active') {
+                    imagePath = 'src/assets/active.png';
+                }
+
+                existingImage.src = imagePath;
+            }
+        }
+
+        function startSensorMonitoring() {
+            updateCharacterBasedOnSensor();
+            setInterval(updateCharacterBasedOnSensor, 5000);
+        }
+
+        function addNoEmotionImage() {
+            // 기존 no_emotion 이미지가 있으면 제거
+            const existingImage = document.querySelector('.no-emotion-image');
+            if (existingImage) {
+                existingImage.remove();
+            }
+
+            // no_emotion 이미지 추가
+            const img = document.createElement('img');
+            img.src = 'src/assets/no_emotion.png';
+            img.alt = 'No Emotion Character';
+            img.className = 'no-emotion-image';
+            document.getElementById('background-view-screen').appendChild(img);
         }
     </script>
 </body>
