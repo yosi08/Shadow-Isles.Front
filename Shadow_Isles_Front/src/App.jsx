@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import nature from '/nature.png'
 import theater from '/theater.png'
 import classroom from '/classroom.svg'
@@ -6,10 +6,15 @@ import kundoIcon from './assets/none_background_kundo.png'
 import computerIcon from './assets/streamline-pixel--computer-old-electronics.svg'
 import trashIcon from './assets/pixel--trash.svg'
 import './App.css'
+import { useWebSocket } from './hooks/useWebSocket'
 
 function App() {
   const [currentScreen, setCurrentScreen] = useState('welcome')
   const [selectedBackground, setSelectedBackground] = useState(null)
+  const [messages, setMessages] = useState([])
+
+  // WebSocket 연결 (필요시 URL 변경)
+  const { isConnected, lastMessage, sendMessage, error } = useWebSocket('ws://localhost:8080')
 
   const backgrounds = [
     { id: 'nature', image: nature, label: 'nature' },
@@ -20,6 +25,30 @@ function App() {
   const handleBackgroundSelect = (background) => {
     setSelectedBackground(background)
     setCurrentScreen('background-view')
+
+    // WebSocket으로 배경 선택 정보 전송
+    sendMessage({
+      type: 'background_selected',
+      background: background.id,
+      timestamp: new Date().toISOString()
+    })
+  }
+
+  // 새 메시지 수신 시 처리
+  useEffect(() => {
+    if (lastMessage) {
+      setMessages(prev => [...prev, lastMessage])
+      console.log('Received message:', lastMessage)
+    }
+  }, [lastMessage])
+
+  // 테스트 메시지 전송 함수
+  const sendTestMessage = () => {
+    sendMessage({
+      type: 'test',
+      message: 'Hello from client!',
+      timestamp: new Date().toISOString()
+    })
   }
 
   if (currentScreen === 'welcome') {
@@ -28,8 +57,19 @@ function App() {
         <h1 className="welcome-title">
           Welcome to <img src={kundoIcon} alt="K" className="kundo-icon" />undo
         </h1>
+        <div style={{ marginBottom: '20px', fontSize: '14px' }}>
+          WebSocket Status: {isConnected ? '🟢 Connected' : '🔴 Disconnected'}
+          {error && <div style={{ color: 'red' }}>Error: {error}</div>}
+        </div>
         <button className="start-button" onClick={() => setCurrentScreen('choose-background')}>
           start
+        </button>
+        <button
+          className="start-button"
+          onClick={sendTestMessage}
+          style={{ marginTop: '10px', backgroundColor: '#4CAF50' }}
+        >
+          Send Test Message
         </button>
       </div>
     )
