@@ -217,6 +217,56 @@
             max-width: 300px;
             max-height: 300px;
             z-index: 10;
+            animation: idle 3s ease-in-out infinite;
+        }
+
+        /* 캐릭터 애니메이션 */
+        @keyframes idle {
+            0%, 100% {
+                transform: translateX(-50%) translateY(0px);
+            }
+            50% {
+                transform: translateX(-50%) translateY(-10px);
+            }
+        }
+
+        @keyframes shake {
+            0%, 100% {
+                transform: translateX(-50%) translateY(0px) rotate(0deg);
+            }
+            25% {
+                transform: translateX(-50%) translateY(0px) rotate(-5deg);
+            }
+            75% {
+                transform: translateX(-50%) translateY(0px) rotate(5deg);
+            }
+        }
+
+        @keyframes bounce {
+            0%, 100% {
+                transform: translateX(-50%) translateY(0px);
+            }
+            50% {
+                transform: translateX(-50%) translateY(-30px);
+            }
+        }
+
+        @keyframes spin {
+            0% {
+                transform: translateX(-50%) rotate(0deg);
+            }
+            100% {
+                transform: translateX(-50%) rotate(360deg);
+            }
+        }
+
+        @keyframes headbang {
+            0%, 100% {
+                transform: translateX(-50%) translateY(0px) rotate(0deg);
+            }
+            50% {
+                transform: translateX(-50%) translateY(-20px) rotate(-15deg);
+            }
         }
     </style>
 </head>
@@ -271,7 +321,10 @@
 
     <script>
         let currentBackground = null;
-        const API_BASE_URL = 'http://localhost:5000';  // Flask 서버 주소
+        const WS_URL = 'ws://localhost:3001';  // WebSocket 서버 주소
+        let ws = null;
+        let characterElement = null;
+        let isAnimating = false;
 
         function showScreen(screenName) {
             document.querySelectorAll('.screen').forEach(screen => {
@@ -289,105 +342,158 @@
 
             if (backgroundId === 'nature') {
                 desktopIcons.style.display = 'flex';
-                // nature 배경에서 센서 모니터링 시작
-                startSensorMonitoring();
             } else {
                 desktopIcons.style.display = 'none';
             }
 
-            // 배경 선택 시 no_emotion 이미지 추가
-            addNoEmotionImage();
-
-            backgroundViewScreen.onclick = function(e) {
-                if (!e.target.closest('.back-button') && !e.target.closest('.desktop-icon')) {
-                    addCenterImage();
-                }
-            };
+            // 배경 선택 시 캐릭터 추가 및 WebSocket 연결
+            addCharacter();
+            connectWebSocket();
 
             showScreen('background-view');
         }
 
-        async function addCenterImage() {
-            console.log('addCenterImage called');
-
-            const existingImage = document.querySelector('.center-image');
-            if (existingImage) {
-                existingImage.remove();
-            }
-
-            // 백엔드에서 최신 센서 데이터 가져오기
-            const sensorData = await getLatestSensorData();
-
-            let imagePath = 'src/assets/happy.png';
-
-            // 센서 데이터에 따라 이미지 선택
-            if (sensorData) {
-                if (sensorData.temperature > 28) {
-                    imagePath = 'src/assets/hot.png';
-                } else if (sensorData.brightness < 30) {
-                    imagePath = 'src/assets/dark.png';
-                }
-            }
-
-            const img = document.createElement('img');
-            img.src = imagePath;
-            img.alt = 'Character';
-            img.className = 'center-image';
-            document.getElementById('background-view-screen').appendChild(img);
-        }
-
-        // API 함수들
-        async function getLatestSensorData() {
-            try {
-                const response = await fetch(`${API_BASE_URL}/api/sensor_data/latest`);
-                if (!response.ok) throw new Error('Failed to fetch');
-                return await response.json();
-            } catch (error) {
-                console.error('센서 데이터 조회 에러:', error);
-                return null;
-            }
-        }
-
-        async function updateCharacterBasedOnSensor() {
-            const sensorData = await getLatestSensorData();
-            const existingImage = document.querySelector('.center-image');
-
-            if (sensorData && existingImage) {
-                let imagePath = 'src/assets/happy.png';
-
-                if (sensorData.temperature > 28) {
-                    imagePath = 'src/assets/hot.png';
-                } else if (sensorData.temperature < 20) {
-                    imagePath = 'src/assets/cold.png';
-                } else if (sensorData.brightness < 30) {
-                    imagePath = 'src/assets/dark.png';
-                } else if (sensorData.pose === 'active') {
-                    imagePath = 'src/assets/active.png';
-                }
-
-                existingImage.src = imagePath;
-            }
-        }
-
-        function startSensorMonitoring() {
-            updateCharacterBasedOnSensor();
-            setInterval(updateCharacterBasedOnSensor, 5000);
-        }
-
-        function addNoEmotionImage() {
-            // 기존 no_emotion 이미지가 있으면 제거
+        // 캐릭터 이미지 생성
+        function addCharacter() {
             const existingImage = document.querySelector('.no-emotion-image');
             if (existingImage) {
                 existingImage.remove();
             }
 
-            // no_emotion 이미지 추가
             const img = document.createElement('img');
             img.src = 'src/assets/no_emotion.png';
-            img.alt = 'No Emotion Character';
+            img.alt = 'Character';
             img.className = 'no-emotion-image';
             document.getElementById('background-view-screen').appendChild(img);
+            characterElement = img;
         }
+
+        // WebSocket 연결
+        function connectWebSocket() {
+            if (ws) {
+                ws.close();
+            }
+
+            ws = new WebSocket(WS_URL);
+
+            ws.onopen = () => {
+                console.log('✅ WebSocket 연결 성공');
+            };
+
+            ws.onmessage = (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+                    console.log('센서 데이터:', data);
+                    updateCharacter(data);
+                } catch (error) {
+                    console.error('데이터 파싱 에러:', error);
+                }
+            };
+
+            ws.onerror = (error) => {
+                console.error('WebSocket 에러:', error);
+            };
+
+            ws.onclose = () => {
+                console.log('❌ WebSocket 연결 종료');
+                // 3초 후 재연결 시도
+                setTimeout(connectWebSocket, 3000);
+            };
+        }
+
+        // 센서 데이터에 따라 캐릭터 업데이트
+        function updateCharacter(data) {
+            if (!characterElement) return;
+
+            const { temperature, light, sound, gesture } = data;
+
+            // 특수 포즈 우선 처리 (제스처 감지)
+            if (gesture === 'jump' && !isAnimating) {
+                // 점프 → '한 바퀴 돌기' 애니메이션
+                performSpinAnimation();
+                return;
+            } else if (gesture === 'handsUp' && !isAnimating) {
+                // 손들기 → '머리 박치기' 포즈
+                performHeadBangPose();
+                return;
+            }
+
+            // 일반 표정/상태 업데이트 (우선순위 순서대로)
+            let imagePath = 'src/assets/no_emotion.png';
+            let shouldShake = false;
+            let shouldBounce = false;
+
+            // 1. 온도 체크 (가장 우선)
+            if (temperature > 28) {
+                imagePath = 'src/assets/hot.png';  // 더움 → 땀을 흘리고 빨개짐
+            } else if (temperature < 20) {
+                imagePath = 'src/assets/cold.png';  // 추움 → 파래지고 떨림
+                shouldShake = true;  // 떨림 애니메이션
+            }
+            // 2. 조도 체크
+            else if (light < 30) {
+                imagePath = 'src/assets/dark.png';  // 어두움 → 슬픈 표정
+            } else if (light > 100) {
+                imagePath = 'src/assets/happy.png';  // 밝음 → 웃는 표정
+            }
+
+            // 3. 소음 체크 (움직임)
+            if (sound > 60) {
+                shouldBounce = true;  // 시끄러움 → 활발하게 움직임
+            }
+
+            // 이미지 변경
+            characterElement.src = imagePath;
+
+            // 애니메이션 적용
+            characterElement.style.animation = 'none';
+            setTimeout(() => {
+                if (shouldShake) {
+                    characterElement.style.animation = 'shake 0.5s infinite';
+                } else if (shouldBounce) {
+                    characterElement.style.animation = 'bounce 0.6s infinite';
+                } else {
+                    characterElement.style.animation = 'idle 3s ease-in-out infinite';
+                }
+            }, 10);
+        }
+
+        // 점프 → 한 바퀴 돌기 애니메이션
+        function performSpinAnimation() {
+            if (isAnimating) return;
+            isAnimating = true;
+
+            characterElement.style.animation = 'spin 1s ease-in-out';
+
+            setTimeout(() => {
+                characterElement.style.animation = 'idle 3s ease-in-out infinite';
+                isAnimating = false;
+            }, 1000);
+        }
+
+        // 손들기 → 머리 박치기 포즈
+        function performHeadBangPose() {
+            if (isAnimating) return;
+            isAnimating = true;
+
+            // 머리 박치기 이미지로 변경 (있다면)
+            const originalSrc = characterElement.src;
+            characterElement.src = 'src/assets/headbang.png';
+            characterElement.style.animation = 'headbang 0.5s ease-in-out 3';
+
+            setTimeout(() => {
+                characterElement.src = originalSrc;
+                characterElement.style.animation = 'idle 3s ease-in-out infinite';
+                isAnimating = false;
+            }, 1500);
+        }
+
+        // 페이지 종료 시 WebSocket 연결 해제
+        window.addEventListener('beforeunload', () => {
+            if (ws) {
+                ws.close();
+            }
+        });
     </script>
 </body>
 </html>
